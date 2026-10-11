@@ -194,71 +194,38 @@ LEFT JOIN medicine_batches b ON m.medicine_id = b.medicine_id
 GROUP BY m.medicine_id, m.name, m.reorder_level
 HAVING COALESCE(SUM(b.quantity),0) <= m.reorder_level;
 
-SELECT 'DATABASE CREATED SUCCESSFULLY' AS status;
+-- COMPACT OUTPUTS: only the main reports needed for the project
 
-SHOW TABLES;
+-- 1. SUPPLIERS
+SELECT supplier_id, name, phone FROM suppliers;
 
-SELECT * FROM suppliers;
-
--- 1. AVAILABLE STOCK: total quantity available for each medicine
+-- 2. AVAILABLE STOCK
 SELECT
-    m.medicine_id,
     m.name AS medicine_name,
-    COALESCE(SUM(b.quantity), 0) AS available_stock,
-    m.reorder_level
+    COALESCE(SUM(b.quantity),0) AS available_stock
 FROM medicines m
 LEFT JOIN medicine_batches b ON m.medicine_id = b.medicine_id
-GROUP BY m.medicine_id, m.name, m.reorder_level
+GROUP BY m.medicine_id, m.name
 ORDER BY m.name;
 
--- 2. LOW STOCK: medicines at or below their reorder level
-SELECT
-    medicine_id,
-    medicine_name,
-    reorder_level,
-    total_stock
+-- 3. LOW STOCK
+SELECT medicine_name, total_stock, reorder_level
 FROM v_low_stock
 ORDER BY total_stock, medicine_name;
 
--- 3. EXPIRING STOCK: batches expiring in the next 90 days (not already expired)
+-- 4. EXPIRING STOCK: within the next 90 days
 SELECT
     m.name AS medicine_name,
     b.batch_number,
     b.quantity,
-    b.expiry_date,
-    DATEDIFF(b.expiry_date, CURRENT_DATE) AS days_until_expiry
+    b.expiry_date
 FROM medicine_batches b
 JOIN medicines m ON b.medicine_id = m.medicine_id
 WHERE b.expiry_date >= CURRENT_DATE
   AND b.expiry_date <= DATE_ADD(CURRENT_DATE, INTERVAL 90 DAY)
-ORDER BY b.expiry_date, m.name;
-SELECT * FROM customers;
-SELECT * FROM medicines;
-SELECT * FROM medicine_batches;
-SELECT * FROM purchases;
-SELECT * FROM purchase_items;
-SELECT * FROM sales;
-SELECT * FROM sale_items;
-SELECT * FROM stock_movements;
+ORDER BY b.expiry_date;
 
-SELECT * FROM v_inventory;
-SELECT * FROM v_low_stock;
-
-SELECT COUNT(*) AS total_suppliers FROM suppliers;
-SELECT COUNT(*) AS total_customers FROM customers;
-SELECT COUNT(*) AS total_medicines FROM medicines;
-SELECT COUNT(*) AS total_batches FROM medicine_batches;
-SELECT COUNT(*) AS total_purchases FROM purchases;
-SELECT COUNT(*) AS total_sales FROM sales;
-
-SELECT
-    m.name AS medicine_name,
-    SUM(b.quantity) AS available_stock
-FROM medicines m
-JOIN medicine_batches b ON m.medicine_id = b.medicine_id
-GROUP BY m.medicine_id, m.name
-ORDER BY m.name;
-
+-- 5. SALES SUMMARY
 SELECT
     s.sale_id,
     c.full_name AS customer_name,
@@ -268,6 +235,7 @@ FROM sales s
 LEFT JOIN customers c ON s.customer_id = c.customer_id
 ORDER BY s.sale_id;
 
+-- 6. EXPIRED STOCK
 SELECT
     m.name AS medicine_name,
     b.batch_number,
@@ -278,31 +246,8 @@ JOIN medicines m ON b.medicine_id = m.medicine_id
 WHERE b.expiry_date < CURRENT_DATE
 ORDER BY b.expiry_date;
 
-SELECT
-    SUM(total_amount) AS total_sales_revenue
+-- 7. TOTAL REVENUE
+SELECT COALESCE(SUM(total_amount),0) AS total_sales_revenue
 FROM sales;
-
-SELECT
-    SUM(total_amount) AS total_purchase_cost
-FROM purchases;
-
-SELECT
-    s.name AS supplier_name,
-    COUNT(p.purchase_id) AS number_of_purchases,
-    COALESCE(SUM(p.total_amount),0) AS purchase_total
-FROM suppliers s
-LEFT JOIN purchases p ON s.supplier_id = p.supplier_id
-GROUP BY s.supplier_id, s.name
-ORDER BY s.name;
-
-SELECT
-    m.name AS medicine_name,
-    SUM(si.quantity) AS units_sold,
-    SUM(si.quantity * si.unit_price) AS sales_value
-FROM sale_items si
-JOIN medicine_batches b ON si.batch_id = b.batch_id
-JOIN medicines m ON b.medicine_id = m.medicine_id
-GROUP BY m.medicine_id, m.name
-ORDER BY units_sold DESC;
 
 SELECT 'ALL PROJECT SQL COMMANDS COMPLETED' AS final_status;
