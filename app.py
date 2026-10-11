@@ -67,8 +67,8 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid #e6ecea}th{background
 footer{max-width:1100px;margin:30px auto;padding:12px 16px;color:#667772;font-size:13px}
 @media(max-width:600px){header{padding:14px}h1{font-size:24px}}
 """
-SHELL = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{title}} · Pharmacy DBMS</title><style>{{style}}</style></head><body>
-<header><a class="brand" href="/">✚ Pharmacy DBMS</a><nav>
+SHELL = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{title}} · MedCare Pharmacy</title><style>{{style}}</style></head><body>
+<header><a class="brand" href="/">✚ MedCare Pharmacy</a><nav>
 <a href="/">Dashboard</a><a href="/medicines">Medicines</a><a href="/suppliers">Suppliers</a><a href="/customers">Customers</a><a href="/receive">Receive stock</a><a href="/sale">New sale</a><a href="/reports">Reports</a></nav></header>
 <main>{% with msgs=get_flashed_messages(with_categories=true) %}{% for cat,msg in msgs %}<div class="flash {{'error' if cat=='error' else ''}}">{{msg}}</div>{% endfor %}{% endwith %}{{body|safe}}</main>
 <footer>DBMS Laboratory project · Demo application only; not for clinical or production use.</footer></body></html>"""
@@ -86,7 +86,7 @@ def dashboard():
       "sales":c.execute("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE date(sale_date)=date('now')").fetchone()[0]}
     low=c.execute("SELECT * FROM v_low_stock ORDER BY available_stock,medicine_name").fetchall()
     exp=c.execute("SELECT * FROM v_expiring_batches ORDER BY expiry_date").fetchall()
-    return page("Dashboard","""<h1>Pharmacy dashboard</h1><p class="muted">Inventory, sales and expiry overview.</p>
+    return page("Dashboard","""<h1>MedCare Pharmacy dashboard</h1><p class="muted">Inventory, sales and expiry overview.</p>
     <div class="grid"><div class="card">Medicine types<div class="metric">{{m.medicines}}</div></div><div class="card">Tracked batches<div class="metric">{{m.batches}}</div></div>
     <div class="card">Valid units in stock<div class="metric">{{m.stock}}</div></div><div class="card">Today's sales<div class="metric">₹{{'%.2f'|format(m.sales)}}</div></div></div>
     <div class="actions"><a class="btn" href="/medicines">Manage medicines</a><a class="btn" href="/receive">Receive stock</a><a class="btn" href="/sale">Create bill</a></div>
