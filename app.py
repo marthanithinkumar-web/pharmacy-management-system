@@ -80,6 +80,13 @@ def init_db(seed=True):
                 bid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
                 conn.execute("INSERT INTO stock_movements(batch_id,movement_type,quantity_change,reference_text) VALUES(?,?,?,?)",
                              (bid,"PURCHASE",qty,"DEMO-SEED — sample data"))
+                purchase_invoice = "DEMO-PUR-" + batch
+                conn.execute("INSERT OR IGNORE INTO purchases(supplier_id,invoice_number,total_amount) VALUES(?,?,?)",
+                             (sid,purchase_invoice,qty*cost))
+                purchase_id = conn.execute("SELECT purchase_id FROM purchases WHERE invoice_number=?", (purchase_invoice,)).fetchone()[0]
+                if not conn.execute("SELECT 1 FROM purchase_items WHERE purchase_id=? AND batch_id=?", (purchase_id,bid)).fetchone():
+                    conn.execute("INSERT INTO purchase_items(purchase_id,batch_id,quantity,unit_cost,line_total) VALUES(?,?,?,?,?)",
+                                 (purchase_id,bid,qty,cost,qty*cost))
         # Clearly labelled sample invoice keeps reports populated on a fresh demo install.
         if conn.execute("SELECT COUNT(*) FROM sales").fetchone()[0] == 0:
             batch = conn.execute("SELECT batch_id,quantity,selling_price FROM medicine_batches WHERE batch_number='DEMO-PAR-001' AND expiry_date>=date('now')").fetchone()
