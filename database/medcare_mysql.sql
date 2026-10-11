@@ -1,15 +1,11 @@
--- MedCare Pharmacy Management System: complete classroom SQL script
--- MySQL Community Server 8.0+ (compatible syntax for MySQL 8.4)
--- WARNING: Recreates the nine project tables in medcare_pharmacy.
--- Existing rows in those tables will be deleted. This is separate from the
--- live Render website, which continues to use its existing SQLite database.
-
 CREATE DATABASE IF NOT EXISTS medcare_pharmacy;
 USE medcare_pharmacy;
 
 SET FOREIGN_KEY_CHECKS = 0;
+
 DROP VIEW IF EXISTS v_low_stock;
 DROP VIEW IF EXISTS v_inventory;
+
 DROP TABLE IF EXISTS stock_movements;
 DROP TABLE IF EXISTS sale_items;
 DROP TABLE IF EXISTS sales;
@@ -19,6 +15,7 @@ DROP TABLE IF EXISTS medicine_batches;
 DROP TABLE IF EXISTS medicines;
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS suppliers;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 CREATE TABLE suppliers (
@@ -142,7 +139,9 @@ INSERT INTO purchases (supplier_id, purchase_date, total_amount) VALUES
 (2,'2026-10-02',240.00),
 (3,'2026-10-03',100.00);
 
-INSERT INTO purchase_items (purchase_id, batch_id, quantity, unit_cost) VALUES
+INSERT INTO purchase_items
+(purchase_id, batch_id, quantity, unit_cost)
+VALUES
 (1,1,100,1.50),
 (2,2,60,4.00),
 (3,4,50,2.00);
@@ -170,22 +169,33 @@ VALUES
 (5,'SALE',-2,'Sale 3');
 
 CREATE VIEW v_inventory AS
-SELECT m.medicine_id, m.name AS medicine_name, m.category,
-       b.batch_number, b.purchase_price, b.selling_price,
-       b.quantity, b.expiry_date, s.name AS supplier_name
+SELECT
+    m.medicine_id,
+    m.name AS medicine_name,
+    m.category,
+    b.batch_number,
+    b.purchase_price,
+    b.selling_price,
+    b.quantity,
+    b.expiry_date,
+    s.name AS supplier_name
 FROM medicines m
 JOIN medicine_batches b ON m.medicine_id = b.medicine_id
 LEFT JOIN suppliers s ON b.supplier_id = s.supplier_id;
 
 CREATE VIEW v_low_stock AS
-SELECT m.medicine_id, m.name AS medicine_name, m.reorder_level,
-       COALESCE(SUM(b.quantity),0) AS total_stock
+SELECT
+    m.medicine_id,
+    m.name AS medicine_name,
+    m.reorder_level,
+    COALESCE(SUM(b.quantity),0) AS total_stock
 FROM medicines m
 LEFT JOIN medicine_batches b ON m.medicine_id = b.medicine_id
 GROUP BY m.medicine_id, m.name, m.reorder_level
 HAVING COALESCE(SUM(b.quantity),0) <= m.reorder_level;
 
 SELECT 'DATABASE CREATED SUCCESSFULLY' AS status;
+
 SHOW TABLES;
 
 SELECT * FROM suppliers;
@@ -197,6 +207,7 @@ SELECT * FROM purchase_items;
 SELECT * FROM sales;
 SELECT * FROM sale_items;
 SELECT * FROM stock_movements;
+
 SELECT * FROM v_inventory;
 SELECT * FROM v_low_stock;
 
@@ -207,52 +218,58 @@ SELECT COUNT(*) AS total_batches FROM medicine_batches;
 SELECT COUNT(*) AS total_purchases FROM purchases;
 SELECT COUNT(*) AS total_sales FROM sales;
 
-SELECT m.name AS medicine_name, SUM(b.quantity) AS available_stock
+SELECT
+    m.name AS medicine_name,
+    SUM(b.quantity) AS available_stock
 FROM medicines m
 JOIN medicine_batches b ON m.medicine_id = b.medicine_id
 GROUP BY m.medicine_id, m.name
 ORDER BY m.name;
 
-SELECT s.sale_id, c.full_name AS customer_name, s.sale_date, s.total_amount
+SELECT
+    s.sale_id,
+    c.full_name AS customer_name,
+    s.sale_date,
+    s.total_amount
 FROM sales s
 LEFT JOIN customers c ON s.customer_id = c.customer_id
 ORDER BY s.sale_id;
 
-SELECT m.name AS medicine_name, b.batch_number, b.expiry_date, b.quantity
+SELECT
+    m.name AS medicine_name,
+    b.batch_number,
+    b.expiry_date,
+    b.quantity
 FROM medicine_batches b
 JOIN medicines m ON b.medicine_id = m.medicine_id
 WHERE b.expiry_date < CURRENT_DATE
 ORDER BY b.expiry_date;
 
-SELECT SUM(total_amount) AS total_sales_revenue FROM sales;
-SELECT SUM(total_amount) AS total_purchase_cost FROM purchases;
+SELECT
+    SUM(total_amount) AS total_sales_revenue
+FROM sales;
 
-SELECT s.name AS supplier_name,
-       COUNT(p.purchase_id) AS number_of_purchases,
-       COALESCE(SUM(p.total_amount),0) AS purchase_total
+SELECT
+    SUM(total_amount) AS total_purchase_cost
+FROM purchases;
+
+SELECT
+    s.name AS supplier_name,
+    COUNT(p.purchase_id) AS number_of_purchases,
+    COALESCE(SUM(p.total_amount),0) AS purchase_total
 FROM suppliers s
 LEFT JOIN purchases p ON s.supplier_id = p.supplier_id
 GROUP BY s.supplier_id, s.name
 ORDER BY s.name;
 
-SELECT m.name AS medicine_name,
-       SUM(si.quantity) AS units_sold,
-       SUM(si.quantity * si.unit_price) AS sales_value
+SELECT
+    m.name AS medicine_name,
+    SUM(si.quantity) AS units_sold,
+    SUM(si.quantity * si.unit_price) AS sales_value
 FROM sale_items si
 JOIN medicine_batches b ON si.batch_id = b.batch_id
 JOIN medicines m ON b.medicine_id = m.medicine_id
 GROUP BY m.medicine_id, m.name
 ORDER BY units_sold DESC;
-
--- Additional practice queries (uncomment and run individually):
--- SELECT * FROM medicines WHERE name LIKE '%Para%';
--- SELECT name, category FROM medicines ORDER BY name;
--- SELECT MIN(selling_price), MAX(selling_price), AVG(selling_price) FROM medicine_batches;
--- SELECT category, COUNT(*) FROM medicines GROUP BY category HAVING COUNT(*) > 1;
--- SELECT m.name, s.name AS supplier_name, b.batch_number, b.quantity
--- FROM medicine_batches b JOIN medicines m ON b.medicine_id=m.medicine_id
--- JOIN suppliers s ON b.supplier_id=s.supplier_id;
--- SELECT * FROM v_low_stock;
--- SELECT 'All project SQL commands completed' AS final_status;
 
 SELECT 'ALL PROJECT SQL COMMANDS COMPLETED' AS final_status;
