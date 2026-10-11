@@ -199,6 +199,39 @@ SELECT 'DATABASE CREATED SUCCESSFULLY' AS status;
 SHOW TABLES;
 
 SELECT * FROM suppliers;
+
+-- 1. AVAILABLE STOCK: total quantity available for each medicine
+SELECT
+    m.medicine_id,
+    m.name AS medicine_name,
+    COALESCE(SUM(b.quantity), 0) AS available_stock,
+    m.reorder_level
+FROM medicines m
+LEFT JOIN medicine_batches b ON m.medicine_id = b.medicine_id
+GROUP BY m.medicine_id, m.name, m.reorder_level
+ORDER BY m.name;
+
+-- 2. LOW STOCK: medicines at or below their reorder level
+SELECT
+    medicine_id,
+    medicine_name,
+    reorder_level,
+    total_stock
+FROM v_low_stock
+ORDER BY total_stock, medicine_name;
+
+-- 3. EXPIRING STOCK: batches expiring in the next 90 days (not already expired)
+SELECT
+    m.name AS medicine_name,
+    b.batch_number,
+    b.quantity,
+    b.expiry_date,
+    DATEDIFF(b.expiry_date, CURRENT_DATE) AS days_until_expiry
+FROM medicine_batches b
+JOIN medicines m ON b.medicine_id = m.medicine_id
+WHERE b.expiry_date >= CURRENT_DATE
+  AND b.expiry_date <= DATE_ADD(CURRENT_DATE, INTERVAL 90 DAY)
+ORDER BY b.expiry_date, m.name;
 SELECT * FROM customers;
 SELECT * FROM medicines;
 SELECT * FROM medicine_batches;
