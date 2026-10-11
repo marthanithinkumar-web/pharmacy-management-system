@@ -49,23 +49,26 @@ def init_db(seed=True):
     conn.commit()
     conn.close()
 
+# Initialize schema and demo inventory when the web server imports this module.
+init_db()
+
 STYLE = """
-body{margin:0;background:#f5f7f8;color:#172b2a;font:15px/1.5 system-ui,Segoe UI,sans-serif}
-header{background:white;border-bottom:1px solid #dce5e3;padding:16px max(16px,calc((100% - 1100px)/2));display:flex;gap:18px;flex-wrap:wrap;align-items:center}
-.brand{font-size:20px;font-weight:800;color:#08715d;text-decoration:none;margin-right:auto}
-nav{display:flex;gap:12px;flex-wrap:wrap}nav a{color:#344e49;text-decoration:none;font-weight:650}
-main{max-width:1100px;margin:24px auto;padding:0 16px}h1{font-size:28px;margin:0 0 8px}h2{font-size:19px}
-.muted{color:#667772}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:18px 0}
-.card,.panel{background:white;border:1px solid #dce5e3;border-radius:12px;padding:16px;margin:12px 0}
-.metric{font-size:28px;font-weight:800}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
-button,.btn{background:#08715d;color:white;border:0;border-radius:8px;padding:10px 14px;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
+body{margin:0;background:linear-gradient(135deg,#eaf6f2,#f5f8fb 55%,#edf3ff);color:#173b36;font:15px/1.55 system-ui,Segoe UI,sans-serif;min-height:100vh}
+header{background:linear-gradient(110deg,#fff,#e2f6ef);border-bottom:1px solid #cce3dc;padding:16px max(16px,calc((100% - 1180px)/2));display:flex;gap:18px;flex-wrap:wrap;align-items:center;box-shadow:0 3px 16px #174b3b0b}
+.brand{font-size:22px;font-weight:900;color:#056b58;text-decoration:none;margin-right:auto;letter-spacing:-.4px}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav a{color:#294b46;text-decoration:none;font-weight:700;padding:8px 10px;border-radius:8px}nav a:hover{background:#d5eee6;color:#075c4d}
+main{max-width:1180px;margin:28px auto;padding:0 20px}h1{font-size:30px;letter-spacing:-.6px;margin:0 0 8px;color:#143f37}h2{font-size:20px;color:#174c41;margin:24px 0 12px}
+.muted{color:#627b75}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin:22px 0}
+.card,.panel{background:rgba(255,255,255,.96);border:1px solid #d5e8e1;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 8px 22px #194d3b0b}
+.metric{font-size:30px;font-weight:900;color:#08715d;letter-spacing:-.6px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+button,.btn{background:linear-gradient(135deg,#08715d,#0a8b71);color:white;border:0;border-radius:10px;padding:11px 16px;font:inherit;font-weight:750;text-decoration:none;cursor:pointer;box-shadow:0 4px 10px #08715d20}
 input,select{width:100%;padding:10px;border:1px solid #c7d4d1;border-radius:8px;background:white;font:inherit;box-sizing:border-box}
 label{display:block;font-weight:650;margin:10px 0 5px}.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
 .tablewrap{overflow:auto;border:1px solid #dce5e3;border-radius:10px;background:white}table{border-collapse:collapse;width:100%}
-th,td{text-align:left;padding:10px;border-bottom:1px solid #e6ecea}th{background:#f2f6f5;font-size:13px}
+th,td{text-align:left;padding:10px;border-bottom:1px solid #e6ecea}th{background:#eaf5f1;color:#28564d;font-size:13px}tr:last-child td{border-bottom:0}.stockbar{height:8px;background:#e1eee9;border-radius:99px;overflow:hidden;min-width:80px}.stockbar span{display:block;height:100%;background:linear-gradient(90deg,#0a8a70,#6ac6a4);border-radius:99px}.hero{background:linear-gradient(120deg,#075f50,#0a8b71 62%,#57b99a);color:white;border-radius:20px;padding:26px 28px;box-shadow:0 12px 28px #075f5026;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}.hero h1{color:white;font-size:32px;margin:0}.hero p{color:#d9f5eb;margin:6px 0 0}.hero-tag{background:#ffffff22;border:1px solid #ffffff45;border-radius:12px;padding:12px 16px;font-weight:750}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.empty-note{padding:15px;color:#627b75;background:#f8fbfa}
 .flash{padding:12px;background:#e5f5ee;color:#075b49;border-radius:8px;margin:12px 0}.error{background:#fff0ed;color:#9b2116}
 footer{max-width:1100px;margin:30px auto;padding:12px 16px;color:#667772;font-size:13px}
-@media(max-width:600px){header{padding:14px}h1{font-size:24px}}
+@media(max-width:600px){header{padding:14px}main{padding:0 14px;margin:18px auto}h1{font-size:25px}.hero{padding:22px}.hero h1{font-size:27px}.metric{font-size:27px}nav{gap:3px}nav a{padding:7px 8px}}
 """
 SHELL = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{title}} · MedCare Pharmacy</title><style>{{style}}</style></head><body>
 <header><a class="brand" href="/">✚ MedCare Pharmacy</a><nav>
@@ -84,14 +87,17 @@ def dashboard():
       "batches":c.execute("SELECT COUNT(*) FROM medicine_batches").fetchone()[0],
       "stock":c.execute("SELECT COALESCE(SUM(quantity),0) FROM medicine_batches WHERE expiry_date>=date('now')").fetchone()[0],
       "sales":c.execute("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE date(sale_date)=date('now')").fetchone()[0]}
+    inventory=c.execute("SELECT * FROM v_inventory ORDER BY available_stock DESC,medicine_name").fetchall()
     low=c.execute("SELECT * FROM v_low_stock ORDER BY available_stock,medicine_name").fetchall()
     exp=c.execute("SELECT * FROM v_expiring_batches ORDER BY expiry_date").fetchall()
-    return page("Dashboard","""<h1>MedCare Pharmacy dashboard</h1><p class="muted">Inventory, sales and expiry overview.</p>
-    <div class="grid"><div class="card">Medicine types<div class="metric">{{m.medicines}}</div></div><div class="card">Tracked batches<div class="metric">{{m.batches}}</div></div>
-    <div class="card">Valid units in stock<div class="metric">{{m.stock}}</div></div><div class="card">Today's sales<div class="metric">₹{{'%.2f'|format(m.sales)}}</div></div></div>
-    <div class="actions"><a class="btn" href="/medicines">Manage medicines</a><a class="btn" href="/receive">Receive stock</a><a class="btn" href="/sale">Create bill</a></div>
-    <h2>Low stock</h2><div class="tablewrap"><table><tr><th>Medicine</th><th>Available</th><th>Reorder level</th></tr>{% for r in low %}<tr><td>{{r.medicine_name}}</td><td>{{r.available_stock}}</td><td>{{r.reorder_level}}</td></tr>{% else %}<tr><td colspan="3">No low-stock medicines.</td></tr>{% endfor %}</table></div>
-    <h2>Expiring in 90 days</h2><div class="tablewrap"><table><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th>Qty</th></tr>{% for r in exp %}<tr><td>{{r.medicine_name}}</td><td>{{r.batch_number}}</td><td>{{r.expiry_date}}</td><td>{{r.quantity}}</td></tr>{% else %}<tr><td colspan="4">No near-expiry batches.</td></tr>{% endfor %}</table></div>""",m=metrics,low=low,exp=exp)
+    return page("Dashboard","""<section class="hero"><div><h1>Dashboard</h1><p>Your pharmacy at a glance — inventory, stock health and sales.</p></div><div class="hero-tag">✚ MedCare Pharmacy <span style="display:block;font-size:12px;font-weight:500;opacity:.9">Pharmacy management</span></div></section>
+    <div class="grid"><div class="card"><div class="muted">Medicine types</div><div class="metric">{{m.medicines}}</div><div class="muted">In your catalogue</div></div><div class="card"><div class="muted">Tracked batches</div><div class="metric">{{m.batches}}</div><div class="muted">Batch records</div></div>
+    <div class="card"><div class="muted">Available stock</div><div class="metric">{{m.stock}}</div><div class="muted">Valid units ready to sell</div></div><div class="card"><div class="muted">Today's sales</div><div class="metric">₹{{'%.2f'|format(m.sales)}}</div><div class="muted">Revenue recorded today</div></div></div>
+    <div class="section-head"><h2 style="margin:8px 0">Quick actions</h2><span class="muted">Common tasks</span></div><div class="actions"><a class="btn" href="/medicines">Manage medicines</a><a class="btn" href="/receive">＋ Receive stock</a><a class="btn" href="/sale">＋ Create bill</a><a class="btn" href="/reports">View reports</a></div>
+    <div class="section-head"><h2>Available stock by medicine</h2><span class="muted">{{inventory|length}} products listed</span></div><div class="tablewrap"><table><tr><th>Medicine</th><th>Category</th><th>Available units</th><th>Stock level</th><th>Reorder level</th><th>Next expiry</th></tr>
+    {% for r in inventory %}<tr><td><strong>{{r.medicine_name}}</strong></td><td>{{r.category or 'General'}}</td><td><strong>{{r.available_stock}}</strong></td><td><div class="stockbar"><span style="width:{{[100,((r.available_stock|int / (r.reorder_level|int if r.reorder_level|int > 0 else 1))*25)]|min}}%"></span></div></td><td>{{r.reorder_level}}</td><td>{{r.next_batch_expiry or '—'}}</td></tr>{% else %}<tr><td colspan="6" class="empty-note">No medicines in the catalogue yet. Add a medicine and receive stock to see inventory here.</td></tr>{% endfor %}</table></div>
+    <div class="grid"><section><h2>Low stock alerts</h2><div class="tablewrap"><table><tr><th>Medicine</th><th>Available</th><th>Reorder level</th></tr>{% for r in low %}<tr><td>{{r.medicine_name}}</td><td>{{r.available_stock}}</td><td>{{r.reorder_level}}</td></tr>{% else %}<tr><td colspan="3" class="empty-note">All listed medicines are above their reorder levels.</td></tr>{% endfor %}</table></div></section>
+    <section><h2>Expiring in 90 days</h2><div class="tablewrap"><table><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th>Qty</th></tr>{% for r in exp %}<tr><td>{{r.medicine_name}}</td><td>{{r.batch_number}}</td><td>{{r.expiry_date}}</td><td>{{r.quantity}}</td></tr>{% else %}<tr><td colspan="4" class="empty-note">No near-expiry batches.</td></tr>{% endfor %}</table></div></section></div>""",m=metrics,inventory=inventory,low=low,exp=exp)
 
 @app.route("/medicines",methods=["GET","POST"])
 def medicines():
