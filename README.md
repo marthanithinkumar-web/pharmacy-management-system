@@ -57,6 +57,8 @@ The Flask web application still uses SQLite automatically. For the college lab t
 ## DBMS coverage
 The MySQL lab script covers CREATE TABLE, primary and foreign keys, CHECK and UNIQUE constraints, INSERT, SELECT, WHERE, LIKE, ORDER BY, aggregate functions, GROUP BY, HAVING, INNER JOIN, LEFT JOIN, subqueries, UNION, and views at a B.Tech 2nd-year introductory DBMS level.
 
+See [DBMS_SYLLABUS_ALIGNMENT.md](docs/DBMS_SYLLABUS_ALIGNMENT.md) for a topic-to-project map, college curriculum links, scope notes, and the distinction between the MySQL lab script and the SQLite-powered web application. The existing Render service URL and Flask/SQLite app architecture are intentionally preserved.
+
 ## Project scope and safety
 - Demo data is synthetic.
 - No real prescriptions, patient medical records, payment gateway, or drug-interaction validation are implemented.
