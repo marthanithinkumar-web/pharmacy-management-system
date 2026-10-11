@@ -34,6 +34,9 @@ def init_db(seed=True):
     if seed:
         # Suppliers and customers make every menu page useful on first launch.
         for name, phone, email, address in [
+            ("Healthy Life Distributors", "9876501001", "healthy@example.com", "Hyderabad"),
+            ("Care Medical Supplies", "9876501002", "care@example.com", "Secunderabad"),
+            ("Prime Pharma Wholesale", "9876501003", "prime@example.com", "Warangal"),
             ("Demo Medical Distributors", "9000000001", "supplier1@example.test", "Demo address — not a real supplier"),
             ("Sample Health Supplies", "9000000002", "supplier2@example.test", "Demo address — not a real supplier"),
             ("Training Pharma Wholesale", "9000000003", "supplier3@example.test", "Demo address — not a real supplier"),
@@ -42,6 +45,9 @@ def init_db(seed=True):
                 conn.execute("INSERT INTO suppliers(name,phone,email,address) VALUES(?,?,?,?)", (name,phone,email,address))
         supplier_rows = {r[1]: r[0] for r in conn.execute("SELECT supplier_id,name FROM suppliers")}
         for name, phone in [
+            ("Rahul Sharma", "9000001001"),
+            ("Priya Reddy", "9000001002"),
+            ("Arjun Kumar", "9000001003"),
             ("Demo Walk-in Customer", "9000010001"),
             ("Sample Customer A", "9000010002"),
             ("Sample Customer B", "9000010003"),
@@ -61,6 +67,15 @@ def init_db(seed=True):
             ("Bandage Roll","First-aid demo","Sample Health Supplies","roll",8,50,7,12,"DEMO-BAN-001","2028-06-30"),
             ("Saline Nasal Spray","Nasal care demo","Sample Health Supplies","bottle",8,24,18,28,"DEMO-SNS-001","2027-05-31"),
         ]
+        # Classroom SQL dataset: keep names, suppliers, batches, prices and reorder levels aligned
+        # with database/medcare_mysql.sql. These are illustrative classroom records, not prescriptions.
+        demo_medicines.extend([
+            ("Paracetamol 500mg", "Analgesic", "ABC Pharma", "tablet", 20, 100, 1.50, 2.50, "PCM101", "2027-12-31"),
+            ("Amoxicillin 250mg", "Antibiotic", "HealthCare Labs", "capsule", 15, 60, 4.00, 6.00, "AMX201", "2027-08-31"),
+            ("Cetirizine 10mg", "Antihistamine", "Prime Pharma", "tablet", 10, 8, 1.00, 2.00, "CTZ301", "2028-03-31"),
+            ("Vitamin C 500mg", "Supplement", "Wellness Labs", "tablet", 12, 50, 2.00, 3.50, "VTC401", "2027-10-31"),
+            ("Omeprazole 20mg", "Gastrointestinal", "ABC Pharma", "capsule", 10, 5, 3.00, 5.00, "OMP501", "2027-06-30"),
+        ])
         # Extra dashboard training rows: several low-stock medicines plus batches
         # expiring soon. Relative dates keep the 90-day panel populated over time.
         demo_medicines.extend([
@@ -91,9 +106,16 @@ def init_db(seed=True):
                 mid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
             existing_batch = conn.execute("SELECT batch_id FROM medicine_batches WHERE medicine_id=? AND batch_number=?", (mid,batch)).fetchone()
             if not existing_batch:
-                supplier_name = ("Training Pharma Wholesale" if name == "Antacid Tablets" else
-                                 "Sample Health Supplies" if name in ("Bandage Roll","Saline Nasal Spray","Vitamin C 500 mg","Antiseptic Solution 100 ml","Gauze Pads") else
-                                 "Demo Medical Distributors")
+                supplier_name = (
+                    {"Paracetamol 500mg": "Healthy Life Distributors",
+                     "Amoxicillin 250mg": "Care Medical Supplies",
+                     "Cetirizine 10mg": "Healthy Life Distributors",
+                     "Vitamin C 500mg": "Prime Pharma Wholesale",
+                     "Omeprazole 20mg": "Care Medical Supplies"}.get(name)
+                    or ("Training Pharma Wholesale" if name == "Antacid Tablets" else
+                        "Sample Health Supplies" if name in ("Bandage Roll","Saline Nasal Spray","Vitamin C 500 mg","Antiseptic Solution 100 ml","Gauze Pads") else
+                        "Demo Medical Distributors")
+                )
                 sid = supplier_rows.get(supplier_name)
                 conn.execute("""INSERT INTO medicine_batches(medicine_id,supplier_id,batch_number,expiry_date,quantity,purchase_price,selling_price)
                                  VALUES(?,?,?,?,?,?,?)""", (mid,sid,batch,expiry,qty,cost,price))
@@ -323,9 +345,21 @@ def reports():
     c=db(); inv=c.execute("SELECT * FROM v_inventory ORDER BY medicine_name").fetchall()
     exp=c.execute("SELECT * FROM v_expiring_batches ORDER BY expiry_date").fetchall()
     sales=c.execute("SELECT date(sale_date) day,COUNT(*) bills,SUM(total_amount) revenue FROM sales GROUP BY date(sale_date) ORDER BY day DESC LIMIT 30").fetchall()
+    expired=c.execute("""SELECT m.name AS medicine_name,b.batch_number,b.expiry_date,b.quantity,
+        'Expired stock' AS report_status FROM medicine_batches b
+        JOIN medicines m ON m.medicine_id=b.medicine_id WHERE b.expiry_date<date('now')
+        UNION ALL
+        SELECT m.name AS medicine_name,b.batch_number,b.expiry_date,b.quantity,
+        'Not expired - upcoming expiry' AS report_status
+        FROM medicine_batches b JOIN medicines m ON m.medicine_id=b.medicine_id
+        WHERE NOT EXISTS (SELECT 1 FROM medicine_batches WHERE expiry_date<date('now'))
+        ORDER BY expiry_date""").fetchall()
+    revenue=c.execute("SELECT COALESCE(SUM(total_amount),0) AS total FROM sales").fetchone()["total"]
     return page("Reports","""<h1>Reports</h1><h2>Inventory</h2><div class="tablewrap"><table><tr><th>Medicine</th><th>Category</th><th>Stock</th><th>Reorder</th></tr>{% for r in inv %}<tr><td>{{r.medicine_name}}</td><td>{{r.category}}</td><td>{{r.available_stock}}</td><td>{{r.reorder_level}}</td></tr>{% endfor %}</table></div>
     <h2>Expiry (next 90 days)</h2><div class="tablewrap"><table><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>Supplier</th></tr>{% for r in exp %}<tr><td>{{r.medicine_name}}</td><td>{{r.batch_number}}</td><td>{{r.expiry_date}}</td><td>{{r.quantity}}</td><td>{{r.supplier_name or '—'}}</td></tr>{% else %}<tr><td colspan="5">No near-expiry batches.</td></tr>{% endfor %}</table></div>
-    <h2>Daily sales</h2><div class="tablewrap"><table><tr><th>Date</th><th>Bills</th><th>Revenue</th></tr>{% for r in sales %}<tr><td>{{r.day}}</td><td>{{r.bills}}</td><td>₹{{'%.2f'|format(r.revenue)}}</td></tr>{% else %}<tr><td colspan="3">No sales recorded.</td></tr>{% endfor %}</table></div>""",inv=inv,exp=exp,sales=sales)
+    <h2>Expired stock / expiry status</h2><div class="tablewrap"><table><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>Status</th></tr>{% for r in expired %}<tr><td>{{r.medicine_name}}</td><td>{{r.batch_number}}</td><td>{{r.expiry_date}}</td><td>{{r.quantity}}</td><td>{{r.report_status}}</td></tr>{% else %}<tr><td colspan="5">No batch records available.</td></tr>{% endfor %}</table></div>
+    <div class="card"><div class="muted">Total sales revenue</div><div class="metric">₹{{'%.2f'|format(revenue)}}</div><div class="muted">All recorded sales</div></div>
+    <h2>Daily sales</h2><div class="tablewrap"><table><tr><th>Date</th><th>Bills</th><th>Revenue</th></tr>{% for r in sales %}<tr><td>{{r.day}}</td><td>{{r.bills}}</td><td>₹{{'%.2f'|format(r.revenue)}}</td></tr>{% else %}<tr><td colspan="3">No sales recorded.</td></tr>{% endfor %}</table></div>""",inv=inv,exp=exp,sales=sales,expired=expired,revenue=revenue)
 
 @app.route("/health")
 def health():
