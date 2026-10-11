@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from pathlib import Path
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from uuid import uuid4
 from flask import Flask, g, request, redirect, url_for, flash, render_template_string
 
@@ -61,6 +61,18 @@ def init_db(seed=True):
             ("Bandage Roll","First-aid demo","Sample Health Supplies","roll",8,50,7,12,"DEMO-BAN-001","2028-06-30"),
             ("Saline Nasal Spray","Nasal care demo","Sample Health Supplies","bottle",8,24,18,28,"DEMO-SNS-001","2027-05-31"),
         ]
+        # Extra dashboard training rows: several low-stock medicines plus batches
+        # expiring soon. Relative dates keep the 90-day panel populated over time.
+        demo_medicines.extend([
+            ("Ibuprofen 200 mg", "Pain relief demo", "Demo Pharma", "strip", 18, 5, 11, 17, "DEMO-IBU-001", (date.today() + timedelta(days=18)).isoformat()),
+            ("Loratadine 10 mg", "Allergy care demo", "Demo Labs", "strip", 15, 4, 9, 14, "DEMO-LOR-001", (date.today() + timedelta(days=35)).isoformat()),
+            ("Zinc Tablets", "Supplement demo", "Training Pharma", "strip", 20, 7, 6, 10, "DEMO-ZNC-001", (date.today() + timedelta(days=62)).isoformat()),
+            ("Antiseptic Solution 100 ml", "First-aid demo", "Sample Health Supplies", "bottle", 10, 3, 20, 30, "DEMO-ANTISEP-001", (date.today() + timedelta(days=78)).isoformat()),
+            ("Eye Lubricant Drops", "Eye care demo", "Demo Labs", "bottle", 12, 6, 22, 32, "DEMO-EYE-001", (date.today() + timedelta(days=26)).isoformat()),
+            ("Throat Lozenges", "Throat care demo", "Demo Pharma", "strip", 14, 5, 7, 11, "DEMO-THR-001", (date.today() + timedelta(days=48)).isoformat()),
+            ("Digestive Enzyme Tablets", "Digestive care demo", "Training Pharma", "strip", 16, 8, 13, 20, "DEMO-DIG-001", (date.today() + timedelta(days=86)).isoformat()),
+            ("Gauze Pads", "First-aid demo", "Sample Health Supplies", "pack", 12, 4, 8, 13, "DEMO-GAU-001", (date.today() + timedelta(days=55)).isoformat()),
+        ])
         for name, category, maker, unit, reorder, qty, cost, price, batch, expiry in demo_medicines:
             row = conn.execute("SELECT medicine_id FROM medicines WHERE name=?", (name,)).fetchone()
             if row:
