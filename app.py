@@ -167,7 +167,7 @@ footer{max-width:1100px;margin:30px auto;padding:12px 16px;color:#667772;font-si
 """
 SHELL = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{title}} · MedCare Pharmacy</title><style>{{style}}</style></head><body>
 <header><a class="brand" href="/">✚ MedCare Pharmacy</a><nav>
-<a href="/">Dashboard</a><a href="/medicines">Medicines</a><a href="/suppliers">Suppliers</a><a href="/customers">Customers</a><a href="/receive">Receive stock</a><a href="/sale">New sale</a><a href="/reports">Reports</a></nav></header>
+<a href="/">Dashboard</a><a href="/medicines">Medicines</a><a href="/suppliers">Suppliers</a><a href="/customers">Customers</a><a href="/receive">Receive stock</a><a href="/sale">New sale</a><a href="/reports">Reports</a><a href="/sql-lab">SQL Lab</a></nav></header>
 <main>{% with msgs=get_flashed_messages(with_categories=true) %}{% for cat,msg in msgs %}<div class="flash {{'error' if cat=='error' else ''}}">{{msg}}</div>{% endfor %}{% endwith %}{{body|safe}}</main>
 <footer></footer></body></html>"""
 
