@@ -65,13 +65,14 @@ def init_db(seed=True):
         # expiring soon. Relative dates keep the 90-day panel populated over time.
         demo_medicines.extend([
             ("Ibuprofen 200 mg", "Pain relief demo", "Demo Pharma", "strip", 18, 5, 11, 17, "DEMO-IBU-001", (date.today() + timedelta(days=18)).isoformat()),
-            ("Loratadine 10 mg", "Allergy care demo", "Demo Labs", "strip", 15, 4, 9, 14, "DEMO-LOR-001", (date.today() + timedelta(days=35)).isoformat()),
-            ("Zinc Tablets", "Supplement demo", "Training Pharma", "strip", 20, 7, 6, 10, "DEMO-ZNC-001", (date.today() + timedelta(days=62)).isoformat()),
-            ("Antiseptic Solution 100 ml", "First-aid demo", "Sample Health Supplies", "bottle", 10, 3, 20, 30, "DEMO-ANTISEP-001", (date.today() + timedelta(days=78)).isoformat()),
+            # Most demo products intentionally have healthy stock and expiry dates beyond 90 days.
+            ("Loratadine 10 mg", "Allergy care demo", "Demo Labs", "strip", 15, 34, 9, 14, "DEMO-LOR-001", (date.today() + timedelta(days=145)).isoformat()),
+            ("Zinc Tablets", "Supplement demo", "Training Pharma", "strip", 20, 47, 6, 10, "DEMO-ZNC-001", (date.today() + timedelta(days=210)).isoformat()),
+            ("Antiseptic Solution 100 ml", "First-aid demo", "Sample Health Supplies", "bottle", 10, 32, 20, 30, "DEMO-ANTISEP-001", (date.today() + timedelta(days=260)).isoformat()),
             ("Eye Lubricant Drops", "Eye care demo", "Demo Labs", "bottle", 12, 6, 22, 32, "DEMO-EYE-001", (date.today() + timedelta(days=26)).isoformat()),
-            ("Throat Lozenges", "Throat care demo", "Demo Pharma", "strip", 14, 5, 7, 11, "DEMO-THR-001", (date.today() + timedelta(days=48)).isoformat()),
-            ("Digestive Enzyme Tablets", "Digestive care demo", "Training Pharma", "strip", 16, 8, 13, 20, "DEMO-DIG-001", (date.today() + timedelta(days=86)).isoformat()),
-            ("Gauze Pads", "First-aid demo", "Sample Health Supplies", "pack", 12, 4, 8, 13, "DEMO-GAU-001", (date.today() + timedelta(days=55)).isoformat()),
+            ("Throat Lozenges", "Throat care demo", "Demo Pharma", "strip", 14, 39, 7, 11, "DEMO-THR-001", (date.today() + timedelta(days=180)).isoformat()),
+            ("Digestive Enzyme Tablets", "Digestive care demo", "Training Pharma", "strip", 16, 44, 13, 20, "DEMO-DIG-001", (date.today() + timedelta(days=300)).isoformat()),
+            ("Gauze Pads", "First-aid demo", "Sample Health Supplies", "pack", 12, 29, 8, 13, "DEMO-GAU-001", (date.today() + timedelta(days=240)).isoformat()),
         ])
         for name, category, maker, unit, reorder, qty, cost, price, batch, expiry in demo_medicines:
             row = conn.execute("SELECT medicine_id FROM medicines WHERE name=?", (name,)).fetchone()
@@ -81,10 +82,10 @@ def init_db(seed=True):
                 conn.execute("INSERT INTO medicines(name,category,manufacturer,unit,reorder_level) VALUES(?,?,?,?,?)",
                              (name,category,maker,unit,reorder))
                 mid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-            if not conn.execute("SELECT 1 FROM medicine_batches WHERE medicine_id=? AND batch_number=?", (mid,batch)).fetchone():
+            existing_batch = conn.execute("SELECT batch_id FROM medicine_batches WHERE medicine_id=? AND batch_number=?", (mid,batch)).fetchone()
+            if not existing_batch:
                 supplier_name = ("Training Pharma Wholesale" if name == "Antacid Tablets" else
-                                 "Sample Health Supplies" if name in ("Bandage Roll","Saline Nasal Spray") else
-                                 "Sample Health Supplies" if name == "Vitamin C 500 mg" else
+                                 "Sample Health Supplies" if name in ("Bandage Roll","Saline Nasal Spray","Vitamin C 500 mg","Antiseptic Solution 100 ml","Gauze Pads") else
                                  "Demo Medical Distributors")
                 sid = supplier_rows.get(supplier_name)
                 conn.execute("""INSERT INTO medicine_batches(medicine_id,supplier_id,batch_number,expiry_date,quantity,purchase_price,selling_price)
@@ -99,6 +100,28 @@ def init_db(seed=True):
                 if not conn.execute("SELECT 1 FROM purchase_items WHERE purchase_id=? AND batch_id=?", (purchase_id,bid)).fetchone():
                     conn.execute("INSERT INTO purchase_items(purchase_id,batch_id,quantity,unit_cost,line_total) VALUES(?,?,?,?,?)",
                                  (purchase_id,bid,qty,cost,qty*cost))
+            else:
+                # Refresh only untouched, explicitly seeded demo batches. Never overwrite batches
+                # that have been sold from or manually adjusted by the user.
+                bid = existing_batch[0]
+                is_demo_seed = conn.execute(
+                    "SELECT 1 FROM stock_movements WHERE batch_id=? AND reference_text LIKE 'DEMO-SEED%'",
+                    (bid,)
+                ).fetchone()
+                has_sales = conn.execute("SELECT 1 FROM sale_items WHERE batch_id=? LIMIT 1", (bid,)).fetchone()
+                has_adjustments = conn.execute(
+                    "SELECT 1 FROM stock_movements WHERE batch_id=? AND movement_type='ADJUSTMENT' LIMIT 1",
+                    (bid,)
+                ).fetchone()
+                if is_demo_seed and not has_sales and not has_adjustments:
+                    conn.execute(
+                        "UPDATE medicine_batches SET expiry_date=?, quantity=?, purchase_price=?, selling_price=? WHERE batch_id=?",
+                        (expiry, qty, cost, price, bid)
+                    )
+                    conn.execute(
+                        "UPDATE medicines SET reorder_level=? WHERE medicine_id=?",
+                        (reorder, mid)
+                    )
         # Clearly labelled sample invoice keeps reports populated on a fresh demo install.
         if conn.execute("SELECT COUNT(*) FROM sales").fetchone()[0] == 0:
             batch = conn.execute("SELECT batch_id,quantity,selling_price FROM medicine_batches WHERE batch_number='DEMO-PAR-001' AND expiry_date>=date('now')").fetchone()
