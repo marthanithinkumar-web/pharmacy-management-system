@@ -214,6 +214,7 @@ FROM v_low_stock
 ORDER BY total_stock, medicine_name;
 
 -- 4. EXPIRING STOCK: within the next 90 days
+-- If none qualify, show the nearest upcoming medicine batches instead.
 SELECT
     m.name AS medicine_name,
     b.batch_number,
@@ -228,11 +229,23 @@ WHERE b.expiry_date >= CURRENT_DATE
 UNION ALL
 
 SELECT
-    'No matching stock' AS medicine_name,
-    '-' AS batch_number,
-    0 AS quantity,
-    NULL AS expiry_date,
-    'No batches expiring within the next 90 days' AS report_status
+    upcoming.medicine_name,
+    upcoming.batch_number,
+    upcoming.quantity,
+    upcoming.expiry_date,
+    'Upcoming expiry - outside 90 days' AS report_status
+FROM (
+    SELECT
+        m.name AS medicine_name,
+        b.batch_number,
+        b.quantity,
+        b.expiry_date
+    FROM medicine_batches b
+    JOIN medicines m ON b.medicine_id = m.medicine_id
+    WHERE b.expiry_date > DATE_ADD(CURRENT_DATE, INTERVAL 90 DAY)
+    ORDER BY b.expiry_date
+    LIMIT 3
+) AS upcoming
 WHERE NOT EXISTS (
     SELECT 1
     FROM medicine_batches
@@ -251,7 +264,8 @@ FROM sales s
 LEFT JOIN customers c ON s.customer_id = c.customer_id
 ORDER BY s.sale_id;
 
--- 6. EXPIRED STOCK
+-- 6. EXPIRED STOCK / EXPIRY STATUS
+-- If no batches are expired, show medicine names and their actual expiry status.
 SELECT
     m.name AS medicine_name,
     b.batch_number,
@@ -265,11 +279,13 @@ WHERE b.expiry_date < CURRENT_DATE
 UNION ALL
 
 SELECT
-    'No expired stock' AS medicine_name,
-    '-' AS batch_number,
-    NULL AS expiry_date,
-    0 AS quantity,
-    'No expired batches found' AS report_status
+    m.name AS medicine_name,
+    b.batch_number,
+    b.expiry_date,
+    b.quantity,
+    'Not expired - upcoming expiry' AS report_status
+FROM medicine_batches b
+JOIN medicines m ON b.medicine_id = m.medicine_id
 WHERE NOT EXISTS (
     SELECT 1
     FROM medicine_batches
