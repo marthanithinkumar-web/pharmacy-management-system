@@ -1,6 +1,6 @@
-# Pharmacy Management System — DBMS Lab Project
+# MedCare Pharmacy — DBMS Lab Project
 
-A student-focused Pharmacy Management System demonstrating relational database design and CRUD workflows with **Python, Flask, and SQLite**. It is a learning/demo application, not a certified pharmacy or clinical system.
+A student-focused MedCare Pharmacy Management System demonstrating relational database design and CRUD workflows with **Python, Flask, and SQLite**. It is a learning/demo application, not a certified pharmacy or clinical system.
 
 ## Features
 - Dashboard with inventory, low-stock and near-expiry summaries
@@ -48,7 +48,7 @@ See [database/schema.sql](database/schema.sql) and [docs/DBMS_NOTES.md](docs/DBM
 - Before production use, add authentication/roles, CSRF protection, migrations, backups, stronger validation, audit controls and a production database.
 
 ## Project information
-- Project title: **Pharmacy Management System**
+- Project title: **MedCare Pharmacy**
 - Project number: **13**
 - Course: **DBMS Laboratory (DBMSL)**
 - Student/faculty/roll-number details are intentionally not fabricated; enter them in the college report where required.
