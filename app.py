@@ -71,7 +71,7 @@ SHELL = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name
 <header><a class="brand" href="/">✚ MedCare Pharmacy</a><nav>
 <a href="/">Dashboard</a><a href="/medicines">Medicines</a><a href="/suppliers">Suppliers</a><a href="/customers">Customers</a><a href="/receive">Receive stock</a><a href="/sale">New sale</a><a href="/reports">Reports</a></nav></header>
 <main>{% with msgs=get_flashed_messages(with_categories=true) %}{% for cat,msg in msgs %}<div class="flash {{'error' if cat=='error' else ''}}">{{msg}}</div>{% endfor %}{% endwith %}{{body|safe}}</main>
-<footer>DBMS Laboratory project · Demo application only; not for clinical or production use.</footer></body></html>"""
+<footer>Pharmacy management demo · For learning and demonstration only; not for clinical or production use.</footer></body></html>"""
 
 def page(title, body, **ctx):
     return render_template_string(SHELL, title=title, style=STYLE, body=render_template_string(body, **ctx))
