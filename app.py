@@ -139,7 +139,7 @@ SHELL = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name
 <header><a class="brand" href="/">✚ MedCare Pharmacy</a><nav>
 <a href="/">Dashboard</a><a href="/medicines">Medicines</a><a href="/suppliers">Suppliers</a><a href="/customers">Customers</a><a href="/receive">Receive stock</a><a href="/sale">New sale</a><a href="/reports">Reports</a></nav></header>
 <main>{% with msgs=get_flashed_messages(with_categories=true) %}{% for cat,msg in msgs %}<div class="flash {{'error' if cat=='error' else ''}}">{{msg}}</div>{% endfor %}{% endwith %}{{body|safe}}</main>
-<footer>Pharmacy management demo · For learning and demonstration only; not for clinical or production use.</footer></body></html>"""
+<footer></footer></body></html>"""
 
 def page(title, body, **ctx):
     return render_template_string(SHELL, title=title, style=STYLE, body=render_template_string(body, **ctx))
@@ -155,7 +155,7 @@ def dashboard():
     inventory=c.execute("SELECT * FROM v_inventory ORDER BY available_stock DESC,medicine_name").fetchall()
     low=c.execute("SELECT * FROM v_low_stock ORDER BY available_stock,medicine_name").fetchall()
     exp=c.execute("SELECT * FROM v_expiring_batches ORDER BY expiry_date").fetchall()
-    return page("Dashboard","""<section class="hero"><div><h1>Dashboard</h1><p>Your pharmacy at a glance — inventory, stock health and sales.</p></div><div class="hero-tag">✚ MedCare Pharmacy <span style="display:block;font-size:12px;font-weight:500;opacity:.9">Pharmacy management</span></div></section>
+    return page("Dashboard","""<section class="hero"><div><h1>Dashboard</h1></div><div class="hero-tag">✚ MedCare Pharmacy <span style="display:block;font-size:12px;font-weight:500;opacity:.9">Pharmacy management</span></div></section>
     <div class="grid"><div class="card"><div class="muted">Medicine types</div><div class="metric">{{m.medicines}}</div><div class="muted">In your catalogue</div></div><div class="card"><div class="muted">Tracked batches</div><div class="metric">{{m.batches}}</div><div class="muted">Batch records</div></div>
     <div class="card"><div class="muted">Available stock</div><div class="metric">{{m.stock}}</div><div class="muted">Valid units ready to sell</div></div><div class="card"><div class="muted">Today's sales</div><div class="metric">₹{{'%.2f'|format(m.sales)}}</div><div class="muted">Revenue recorded today</div></div></div>
     <div class="section-head"><h2 style="margin:8px 0">Quick actions</h2><span class="muted">Common tasks</span></div><div class="actions"><a class="btn" href="/medicines">Manage medicines</a><a class="btn" href="/receive">＋ Receive stock</a><a class="btn" href="/sale">＋ Create bill</a><a class="btn" href="/reports">View reports</a></div>
