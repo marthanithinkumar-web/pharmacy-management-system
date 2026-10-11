@@ -212,12 +212,20 @@ def receive():
             c.commit(); flash("Stock received. Purchase invoice: "+invoice); return redirect(url_for("receive"))
         except (ValueError,KeyError,sqlite3.IntegrityError):
             c.rollback(); flash("Check inputs. Quantity must be positive, prices non-negative, expiry not past, and batch unique per medicine.","error")
+    recent=c.execute("""SELECT p.purchase_date,p.invoice_number,p.total_amount,s.name supplier_name,
+        GROUP_CONCAT(m.name || ' (' || pi.quantity || ')', ', ') items
+        FROM purchases p LEFT JOIN suppliers s ON s.supplier_id=p.supplier_id
+        LEFT JOIN purchase_items pi ON pi.purchase_id=p.purchase_id
+        LEFT JOIN medicine_batches b ON b.batch_id=pi.batch_id
+        LEFT JOIN medicines m ON m.medicine_id=b.medicine_id
+        GROUP BY p.purchase_id ORDER BY p.purchase_id DESC LIMIT 15""").fetchall()
     return page("Receive stock","""<h1>Receive stock</h1><p class="muted">Each batch stores its own expiry and prices.</p>{% if not meds %}<div class="flash error">Add a medicine first.</div>{% else %}
     <div class="panel"><form method="post"><div class="form"><div><label>Medicine *</label><select name="medicine_id">{% for m in meds %}<option value="{{m.medicine_id}}">{{m.name}}</option>{% endfor %}</select></div>
     <div><label>Supplier</label><select name="supplier_id"><option value="">Unspecified</option>{% for s in sups %}<option value="{{s.supplier_id}}">{{s.name}}</option>{% endfor %}</select></div>
     <div><label>Batch number *</label><input name="batch_number" required></div><div><label>Expiry *</label><input type="date" name="expiry_date" min="{{today}}" required></div>
     <div><label>Quantity *</label><input type="number" name="quantity" min="1" required></div><div><label>Purchase price ₹ *</label><input type="number" name="purchase_price" min="0" step=".01" required></div>
-    <div><label>Selling price ₹ *</label><input type="number" name="selling_price" min="0" step=".01" required></div></div><p><button>Record purchase</button></p></form></div>{% endif %}""",meds=meds,sups=sups,today=date.today().isoformat())
+    <div><label>Selling price ₹ *</label><input type="number" name="selling_price" min="0" step=".01" required></div></div><p><button>Record purchase</button></p></form></div>{% endif %}
+    <h2>Recent stock receipts</h2><div class="tablewrap"><table><tr><th>Date</th><th>Invoice</th><th>Supplier</th><th>Items / quantity</th><th>Total</th></tr>{% for r in recent %}<tr><td>{{r.purchase_date}}</td><td>{{r.invoice_number}}</td><td>{{r.supplier_name or '—'}}</td><td>{{r.items or '—'}}</td><td>₹{{'%.2f'|format(r.total_amount)}}</td></tr>{% else %}<tr><td colspan="5">No receipts recorded yet. Record a purchase above.</td></tr>{% endfor %}</table></div>""",meds=meds,sups=sups,today=date.today().isoformat(),recent=recent)
 
 @app.route("/sale",methods=["GET","POST"])
 def sale():
