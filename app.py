@@ -73,6 +73,13 @@ def init_db(seed=True):
             ("Throat Lozenges", "Throat care demo", "Demo Pharma", "strip", 14, 39, 7, 11, "DEMO-THR-001", (date.today() + timedelta(days=180)).isoformat()),
             ("Digestive Enzyme Tablets", "Digestive care demo", "Training Pharma", "strip", 16, 44, 13, 20, "DEMO-DIG-001", (date.today() + timedelta(days=300)).isoformat()),
             ("Gauze Pads", "First-aid demo", "Sample Health Supplies", "pack", 12, 29, 8, 13, "DEMO-GAU-001", (date.today() + timedelta(days=240)).isoformat()),
+            # Three additional low-stock examples with uneven quantities and later expiry dates.
+            ("Cotton Roll", "First-aid demo", "Sample Health Supplies", "roll", 12, 3, 5, 9, "DEMO-COT-001", (date.today() + timedelta(days=180)).isoformat()),
+            ("Thermometer Strips", "Health monitoring demo", "Demo Labs", "pack", 20, 9, 8, 14, "DEMO-THERM-001", (date.today() + timedelta(days=150)).isoformat()),
+            ("Hand Sanitizer 100 ml", "Hygiene demo", "Demo Pharma", "bottle", 24, 13, 12, 20, "DEMO-SAN-001", (date.today() + timedelta(days=200)).isoformat()),
+            # Two additional near-expiry batches that still have healthy stock levels.
+            ("Calamine Lotion 100 ml", "Skin care demo", "Demo Labs", "bottle", 8, 27, 14, 22, "DEMO-CAL-001", (date.today() + timedelta(days=42)).isoformat()),
+            ("Multivitamin Syrup 200 ml", "Supplement demo", "Training Pharma", "bottle", 10, 36, 18, 28, "DEMO-MVS-001", (date.today() + timedelta(days=70)).isoformat()),
         ])
         for name, category, maker, unit, reorder, qty, cost, price, batch, expiry in demo_medicines:
             row = conn.execute("SELECT medicine_id FROM medicines WHERE name=?", (name,)).fetchone()
