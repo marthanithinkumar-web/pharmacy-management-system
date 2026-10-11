@@ -38,8 +38,24 @@ Optional environment variables:
 python -m unittest discover -s tests -v
 ```
 
+## DBMS lab SQL files
+
+The Flask web application still uses SQLite automatically. For the college lab terminal, use the separate **MySQL 8.0+ compatible** script:
+- [database/medcare_mysql.sql](database/medcare_mysql.sql) — creates the practice database and tables, inserts sample data, creates simple views, and includes beginner/intermediate SQL practice queries.
+- [database/schema.sql](database/schema.sql) — SQLite schema used by the Flask application.
+- [docs/DBMS_NOTES.md](docs/DBMS_NOTES.md) — concepts and viva notes.
+
+### Run the MySQL script on Windows
+1. Open MySQL Command Line Client and log in.
+2. Save/download `database/medcare_mysql.sql` to your computer.
+3. At the `mysql>` prompt, run `SOURCE C:/full/path/to/medcare_mysql.sql;` and replace the example path with the actual file path.
+4. When setup finishes, run the practice SELECT statements near the bottom of the file one at a time. They are commented out so they do not all execute during setup.
+5. Check the output with `USE medcare_pharmacy;`, then `SHOW TABLES;`, then `SELECT * FROM medicines;`.
+
+**Warning:** the MySQL setup script drops and recreates its named tables in `medcare_pharmacy`. Use it only for this practice project, because existing data in those tables will be deleted.
+
 ## DBMS coverage
-See [database/schema.sql](database/schema.sql) and [docs/DBMS_NOTES.md](docs/DBMS_NOTES.md) for entities, relationships, normalization notes, SQL examples, transactions, indexes, and viva points.
+The MySQL lab script covers CREATE TABLE, primary and foreign keys, CHECK and UNIQUE constraints, INSERT, SELECT, WHERE, LIKE, ORDER BY, aggregate functions, GROUP BY, HAVING, INNER JOIN, LEFT JOIN, subqueries, UNION, and views at a B.Tech 2nd-year introductory DBMS level.
 
 ## Project scope and safety
 - Demo data is synthetic.
