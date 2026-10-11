@@ -27,26 +27,60 @@ def close_db(_err=None):
         conn.close()
 
 def init_db(seed=True):
+    """Create the schema and add clearly labelled demonstration records idempotently."""
     conn = sqlite3.connect(DB_PATH)
     conn.execute("PRAGMA foreign_keys=ON")
     conn.executescript(SCHEMA.read_text(encoding="utf-8"))
-    if seed and conn.execute("SELECT COUNT(*) FROM medicines").fetchone()[0] == 0:
-        conn.execute("INSERT INTO suppliers(name,phone,email) VALUES(?,?,?)",
-                     ("Demo Medical Distributors","9000000001","supplier@example.test"))
-        sid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        demo = [
-            ("Paracetamol 500 mg","Analgesic","Demo Pharma","strip",20,100,10,15),
-            ("Cetirizine 10 mg","Antihistamine","Demo Pharma","strip",10,100,8,12),
-            ("ORS Sachet","Rehydration","Demo Labs","piece",15,100,4,7),
+    if seed:
+        # Suppliers and customers make every menu page useful on first launch.
+        for name, phone, email, address in [
+            ("Demo Medical Distributors", "9000000001", "supplier1@example.test", "Demo address — not a real supplier"),
+            ("Sample Health Supplies", "9000000002", "supplier2@example.test", "Demo address — not a real supplier"),
+            ("Training Pharma Wholesale", "9000000003", "supplier3@example.test", "Demo address — not a real supplier"),
+        ]:
+            if not conn.execute("SELECT 1 FROM suppliers WHERE name=?", (name,)).fetchone():
+                conn.execute("INSERT INTO suppliers(name,phone,email,address) VALUES(?,?,?,?)", (name,phone,email,address))
+        supplier_rows = {r[1]: r[0] for r in conn.execute("SELECT supplier_id,name FROM suppliers")}
+        for name, phone in [
+            ("Demo Walk-in Customer", "9000010001"),
+            ("Sample Customer A", "9000010002"),
+            ("Sample Customer B", "9000010003"),
+            ("Training Customer C", "9000010004"),
+        ]:
+            if not conn.execute("SELECT 1 FROM customers WHERE full_name=?", (name,)).fetchone():
+                conn.execute("INSERT INTO customers(full_name,phone) VALUES(?,?)", (name,phone))
+
+        # Seed only named demo products/batches; never overwrite actual stock quantities.
+        demo_medicines = [
+            ("Paracetamol 500 mg","Analgesic","Demo Pharma","strip",20,100,10,15,"DEMO-PAR-001","2028-12-31"),
+            ("Cetirizine 10 mg","Antihistamine","Demo Pharma","strip",12,45,8,12,"DEMO-CET-001","2028-11-30"),
+            ("ORS Sachet","Rehydration","Demo Labs","piece",10,80,4,7,"DEMO-ORS-001","2028-10-31"),
+            ("Vitamin C 500 mg","Supplement demo","Demo Labs","strip",15,8,12,18,"DEMO-VTC-001","2028-09-30"),
+            ("Antacid Tablets","Antacid demo","Training Pharma","strip",12,6,9,14,"DEMO-ANT-001","2026-11-15"),
+            ("Cough Syrup 100 ml","Cough relief demo","Demo Pharma","bottle",10,30,25,38,"DEMO-CSY-001","2026-12-05"),
+            ("Bandage Roll","First-aid demo","Sample Health Supplies","roll",8,50,7,12,"DEMO-BAN-001","2028-06-30"),
+            ("Saline Nasal Spray","Nasal care demo","Sample Health Supplies","bottle",8,24,18,28,"DEMO-SNS-001","2027-05-31"),
         ]
-        for name,cat,maker,unit,reorder,qty,cost,price in demo:
-            conn.execute("INSERT INTO medicines(name,category,manufacturer,unit,reorder_level) VALUES(?,?,?,?,?)",
-                         (name,cat,maker,unit,reorder))
-            mid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-            conn.execute("""INSERT INTO medicine_batches(medicine_id,supplier_id,batch_number,expiry_date,quantity,purchase_price,selling_price)
-                            VALUES(?,?,?,?,?,?,?)""",
-                         (mid,sid,"DEMO-%03d" % mid,"2028-12-31",qty,cost,price))
-    conn.commit()
+        for name, category, maker, unit, reorder, qty, cost, price, batch, expiry in demo_medicines:
+            row = conn.execute("SELECT medicine_id FROM medicines WHERE name=?", (name,)).fetchone()
+            if row:
+                mid = row[0]
+            else:
+                conn.execute("INSERT INTO medicines(name,category,manufacturer,unit,reorder_level) VALUES(?,?,?,?,?)",
+                             (name,category,maker,unit,reorder))
+                mid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            if not conn.execute("SELECT 1 FROM medicine_batches WHERE medicine_id=? AND batch_number=?", (mid,batch)).fetchone():
+                supplier_name = ("Training Pharma Wholesale" if name == "Antacid Tablets" else
+                                 "Sample Health Supplies" if name in ("Bandage Roll","Saline Nasal Spray") else
+                                 "Sample Health Supplies" if name == "Vitamin C 500 mg" else
+                                 "Demo Medical Distributors")
+                sid = supplier_rows.get(supplier_name)
+                conn.execute("""INSERT INTO medicine_batches(medicine_id,supplier_id,batch_number,expiry_date,quantity,purchase_price,selling_price)
+                                 VALUES(?,?,?,?,?,?,?)""", (mid,sid,batch,expiry,qty,cost,price))
+                bid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+                conn.execute("INSERT INTO stock_movements(batch_id,movement_type,quantity_change,reference_text) VALUES(?,?,?,?)",
+                             (bid,"PURCHASE",qty,"DEMO-SEED — sample data"))
+        conn.commit()
     conn.close()
 
 # Initialize schema and demo inventory when the web server imports this module.
