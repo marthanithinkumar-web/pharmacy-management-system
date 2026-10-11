@@ -331,6 +331,20 @@ def reports():
 def not_found(_err):
     return page("Not found","<h1>Page not found</h1><a class='btn' href='/'>Dashboard</a>"),404
 
+@app.route("/sql-lab")
+def sql_lab():
+    return page("DBMS SQL Lab", """
+    <h1>DBMS SQL Lab</h1>
+    <p class="muted">MedCare Pharmacy · DBMS Laboratory Project 13</p>
+    <div class="panel"><h2>SELECT, WHERE and ORDER BY</h2><pre><code>SELECT name, category FROM medicines WHERE category = 'Pain Relief' ORDER BY name;</code></pre></div>
+    <div class="panel"><h2>LIKE search</h2><pre><code>SELECT name FROM medicines WHERE name LIKE '%Syrup%';</code></pre></div>
+    <div class="panel"><h2>Aggregate functions</h2><pre><code>SELECT COUNT(*) AS medicine_count, MIN(reorder_level), MAX(reorder_level), AVG(reorder_level) FROM medicines;</code></pre></div>
+    <div class="panel"><h2>GROUP BY and HAVING</h2><pre><code>SELECT category, COUNT(*) AS medicine_count FROM medicines GROUP BY category HAVING COUNT(*) >= 1;</code></pre></div>
+    <div class="panel"><h2>JOIN</h2><pre><code>SELECT m.name, b.batch_number, s.name AS supplier, b.quantity FROM medicine_batches b JOIN medicines m ON m.medicine_id=b.medicine_id LEFT JOIN suppliers s ON s.supplier_id=b.supplier_id;</code></pre></div>
+    <div class="panel"><h2>Subquery</h2><pre><code>SELECT m.name, b.selling_price FROM medicines m JOIN medicine_batches b ON b.medicine_id=m.medicine_id WHERE b.selling_price > (SELECT AVG(selling_price) FROM medicine_batches);</code></pre></div>
+    <div class="panel"><h2>Run the MySQL lab script</h2><p>The standalone MySQL script is for your local MySQL Command Line. This live website continues to use its existing SQLite database.</p><p><a href="https://github.com/marthanithinkumar-web/pharmacy-management-system/blob/main/database/medcare_mysql.sql">Open MySQL lab script</a></p></div>
+    """)
+    
 if __name__=="__main__":
     init_db()
     app.run(host="127.0.0.1",port=int(os.environ.get("PORT","5000")),debug=os.environ.get("FLASK_DEBUG")=="1")
