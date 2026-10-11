@@ -3,7 +3,7 @@ import sqlite3
 from pathlib import Path
 from datetime import date, datetime, timedelta
 from uuid import uuid4
-from flask import Flask, g, request, redirect, url_for, flash, render_template_string
+from flask import Flask, g, request, redirect, url_for, flash, render_template_string, jsonify
 
 ROOT = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("DATABASE_PATH", ROOT / "instance" / "pharmacy.db"))
@@ -326,6 +326,16 @@ def reports():
     return page("Reports","""<h1>Reports</h1><h2>Inventory</h2><div class="tablewrap"><table><tr><th>Medicine</th><th>Category</th><th>Stock</th><th>Reorder</th></tr>{% for r in inv %}<tr><td>{{r.medicine_name}}</td><td>{{r.category}}</td><td>{{r.available_stock}}</td><td>{{r.reorder_level}}</td></tr>{% endfor %}</table></div>
     <h2>Expiry (next 90 days)</h2><div class="tablewrap"><table><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>Supplier</th></tr>{% for r in exp %}<tr><td>{{r.medicine_name}}</td><td>{{r.batch_number}}</td><td>{{r.expiry_date}}</td><td>{{r.quantity}}</td><td>{{r.supplier_name or '—'}}</td></tr>{% else %}<tr><td colspan="5">No near-expiry batches.</td></tr>{% endfor %}</table></div>
     <h2>Daily sales</h2><div class="tablewrap"><table><tr><th>Date</th><th>Bills</th><th>Revenue</th></tr>{% for r in sales %}<tr><td>{{r.day}}</td><td>{{r.bills}}</td><td>₹{{'%.2f'|format(r.revenue)}}</td></tr>{% else %}<tr><td colspan="3">No sales recorded.</td></tr>{% endfor %}</table></div>""",inv=inv,exp=exp,sales=sales)
+
+@app.route("/health")
+def health():
+    """Lightweight Render health check; does not mutate application data."""
+    try:
+        db().execute("SELECT 1").fetchone()
+        return jsonify(status="ok", database="ok"), 200
+    except sqlite3.Error:
+        app.logger.exception("Database health check failed")
+        return jsonify(status="error", database="unavailable"), 503
 
 @app.errorhandler(404)
 def not_found(_err):
