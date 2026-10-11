@@ -80,6 +80,18 @@ def init_db(seed=True):
                 bid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
                 conn.execute("INSERT INTO stock_movements(batch_id,movement_type,quantity_change,reference_text) VALUES(?,?,?,?)",
                              (bid,"PURCHASE",qty,"DEMO-SEED — sample data"))
+        # Clearly labelled sample invoice keeps reports populated on a fresh demo install.
+        if conn.execute("SELECT COUNT(*) FROM sales").fetchone()[0] == 0:
+            batch = conn.execute("SELECT batch_id,quantity,selling_price FROM medicine_batches WHERE batch_number='DEMO-PAR-001' AND expiry_date>=date('now')").fetchone()
+            customer = conn.execute("SELECT customer_id FROM customers WHERE full_name='Demo Walk-in Customer'").fetchone()
+            if batch and batch[1] >= 2 and customer:
+                invoice = "DEMO-SALE-001"
+                total = round(float(batch[2]) * 2, 2)
+                conn.execute("INSERT INTO sales(customer_id,invoice_number,total_amount) VALUES(?,?,?)", (customer[0],invoice,total))
+                sale_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+                conn.execute("INSERT INTO sale_items(sale_id,batch_id,quantity,unit_price,line_total) VALUES(?,?,?,?,?)", (sale_id,batch[0],2,batch[2],total))
+                conn.execute("UPDATE medicine_batches SET quantity=quantity-2 WHERE batch_id=?", (batch[0],))
+                conn.execute("INSERT INTO stock_movements(batch_id,movement_type,quantity_change,reference_text) VALUES(?,?,?,?)", (batch[0],"SALE",-2,invoice+" — demo"))
         conn.commit()
     conn.close()
 
