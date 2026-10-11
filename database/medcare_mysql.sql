@@ -218,12 +218,28 @@ SELECT
     m.name AS medicine_name,
     b.batch_number,
     b.quantity,
-    b.expiry_date
+    b.expiry_date,
+    'Expiring within 90 days' AS report_status
 FROM medicine_batches b
 JOIN medicines m ON b.medicine_id = m.medicine_id
 WHERE b.expiry_date >= CURRENT_DATE
   AND b.expiry_date <= DATE_ADD(CURRENT_DATE, INTERVAL 90 DAY)
-ORDER BY b.expiry_date;
+
+UNION ALL
+
+SELECT
+    'No matching stock' AS medicine_name,
+    '-' AS batch_number,
+    0 AS quantity,
+    NULL AS expiry_date,
+    'No batches expiring within the next 90 days' AS report_status
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM medicine_batches
+    WHERE expiry_date >= CURRENT_DATE
+      AND expiry_date <= DATE_ADD(CURRENT_DATE, INTERVAL 90 DAY)
+)
+ORDER BY expiry_date;
 
 -- 5. SALES SUMMARY
 SELECT
@@ -240,11 +256,26 @@ SELECT
     m.name AS medicine_name,
     b.batch_number,
     b.expiry_date,
-    b.quantity
+    b.quantity,
+    'Expired stock' AS report_status
 FROM medicine_batches b
 JOIN medicines m ON b.medicine_id = m.medicine_id
 WHERE b.expiry_date < CURRENT_DATE
-ORDER BY b.expiry_date;
+
+UNION ALL
+
+SELECT
+    'No expired stock' AS medicine_name,
+    '-' AS batch_number,
+    NULL AS expiry_date,
+    0 AS quantity,
+    'No expired batches found' AS report_status
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM medicine_batches
+    WHERE expiry_date < CURRENT_DATE
+)
+ORDER BY expiry_date;
 
 -- 7. TOTAL REVENUE
 SELECT COALESCE(SUM(total_amount),0) AS total_sales_revenue
