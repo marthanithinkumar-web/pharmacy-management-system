@@ -115,7 +115,7 @@ INSERT INTO medicine_batches
 (8,3,'CS801',18.00,28.00,4,'2026-12-05');
 
 INSERT INTO purchases (supplier_id,purchase_date,total_amount) VALUES
-(1,'2026-10-01',171.25),
+(1,'2026-10-01',169.25),
 (2,'2026-10-02',275.00),
 (3,'2026-10-03',172.00);
 -- Purchase item quantities equal opening quantities before sample sales.
