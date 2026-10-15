@@ -108,15 +108,15 @@ INSERT INTO medicine_batches
 (1,1,'PCM101',1.50,2.50,90,'2027-12-31'),
 (2,2,'AMX201',4.00,6.00,57,'2027-08-31'),
 (3,1,'CTZ301',1.00,2.00,6,'2028-03-31'),
-(4,3,'VTC401',2.00,3.50,45,'2026-11-30'),
+(4,3,'VTC401',2.00,3.50,48,'2026-11-30'),
 (5,2,'OMP501',3.00,5.00,5,'2027-06-30'),
 (6,2,'ORS601',2.00,4.00,7,'2027-05-31'),
 (7,1,'IRN701',1.25,2.50,9,'2026-11-20'),
 (8,3,'CS801',18.00,28.00,4,'2026-12-05');
 
 INSERT INTO purchases (supplier_id,purchase_date,total_amount) VALUES
-(1,'2026-10-01',163.75),
-(2,'2026-10-02',368.00),
+(1,'2026-10-01',171.25),
+(2,'2026-10-02',275.00),
 (3,'2026-10-03',172.00);
 -- Purchase item quantities equal opening quantities before sample sales.
 INSERT INTO purchase_items (purchase_id,batch_id,quantity,unit_cost) VALUES
@@ -140,7 +140,7 @@ INSERT INTO stock_movements (batch_id,movement_type,quantity_change,notes) VALUE
 (7,'PURCHASE',9,'Opening purchase'),(8,'PURCHASE',4,'Opening purchase'),
 (1,'SALE',-10,'Sample sale 1'),(2,'SALE',-3,'Sample sale 2'),
 (5,'SALE',-2,'Sample sale 3'),(3,'SALE',-2,'Sample sale 4'),
-(4,'SALE',-5,'Sample sales 4 and 5');
+(4,'SALE',-2,'Sample sale 5');
 
 CREATE VIEW v_inventory AS
 SELECT m.medicine_id,m.name AS medicine_name,m.category,m.manufacturer,
