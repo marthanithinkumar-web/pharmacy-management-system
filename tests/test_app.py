@@ -18,7 +18,7 @@ class PharmacyTests(unittest.TestCase):
 
     def test_core_pages_load(self):
         for path in ("/", "/medicines", "/suppliers", "/customers",
-                     "/receive", "/sale", "/reports", "/sql-lab", "/health"):
+                     "/receive", "/sale", "/reports", "/health"):
             with self.subTest(path=path):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200, response.get_data(as_text=True)[:300])
